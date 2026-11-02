@@ -1,0 +1,15 @@
+{
+  "name": "mundinho",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Portal de joguinhos e vídeos animados para bebês",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "start:rede": "node server.mjs --rede",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
+}
