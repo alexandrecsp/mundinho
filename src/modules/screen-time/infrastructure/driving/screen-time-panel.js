@@ -3,19 +3,18 @@ import { h } from '../../../../shared/ui/dom.js';
 const MINUTE = 60_000;
 const LIMIT_CHOICES = [5, 10, 15, 20, 30, null];
 
-/** The parents' corner of the home page: today's usage and the daily limit. */
+/** Today's screen time and the daily limit, for the parents' corner of the home page. */
 export function renderScreenTimePanel({ getScreenTime, setScreenTimeLimit, resetScreenTime }) {
-  const panel = h('section', { class: 'parents', 'aria-labelledby': 'parents-title' });
+  const panel = h('div', { class: 'screen-time' });
 
   function draw(time = getScreenTime.execute()) {
     // h() skips false children; replaceChildren() would print them.
     const content = h('div', {},
-      h('div', { class: 'parents-head' },
-        h('h2', { id: 'parents-title' }, 'Área dos pais'),
+      h('div', { class: 'parents-row' },
+        h('p', { class: 'parents-label', id: 'limit-label' }, 'Tempo de tela por dia'),
         h('p', { class: 'parents-usage' }, usage(time))),
       time.limitMs !== null && meter(time),
       time.exhausted && h('p', { class: 'parents-alert' }, '🌙 O tempo de tela de hoje acabou. Os jogos mostram a tela de descanso até amanhã.'),
-      h('p', { class: 'parents-label', id: 'limit-label' }, 'Limite por dia'),
       h('div', { class: 'chips', role: 'group', 'aria-labelledby': 'limit-label' },
         LIMIT_CHOICES.map((minutes) => {
           const limitMs = minutes === null ? null : minutes * MINUTE;
@@ -26,10 +25,6 @@ export function renderScreenTimePanel({ getScreenTime, setScreenTimeLimit, reset
           }, minutes === null ? 'Sem limite' : `${minutes} min`);
         })),
       h('button', { class: 'link-button', onclick: () => draw(resetScreenTime.execute()) }, 'Zerar o tempo de hoje'),
-      h('p', { class: 'parents-tip' },
-        'A Sociedade Brasileira de Pediatria recomenda evitar telas antes dos 2 anos. ',
-        'Se usar, prefira poucos minutos, com você junto, conversando e cantando com o bebê. ',
-        'Para sair de um jogo ou vídeo, segure o botão ✕ do canto por 2 segundos.'),
     );
     panel.replaceChildren(...content.childNodes);
   }

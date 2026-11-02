@@ -1,8 +1,10 @@
 import { renderCatalogGrid } from '../modules/catalog/index.js';
 import { renderScreenTimePanel } from '../modules/screen-time/index.js';
+import { renderThemePicker } from '../modules/theme/index.js';
 import { h } from '../shared/ui/dom.js';
 
-export function mountHome(root, { catalog, screenTime, onOpen }) {
+export function mountHome(root, { catalog, screenTime, theme, onOpen }) {
+  const themePicker = renderThemePicker(theme);
   root.append(
     h('main', { class: 'home' },
       h('header', { class: 'hero' },
@@ -10,7 +12,14 @@ export function mountHome(root, { catalog, screenTime, onOpen }) {
         h('h1', {}, 'Mundinho'),
         h('p', {}, 'Brincadeiras e musiquinhas para os primeiros meses')),
       renderCatalogGrid({ listActivities: catalog.listActivities, onOpen }),
-      renderScreenTimePanel(screenTime)),
+      h('section', { class: 'parents', 'aria-labelledby': 'parents-title' },
+        h('h2', { id: 'parents-title' }, 'Área dos pais'),
+        renderScreenTimePanel(screenTime),
+        themePicker.element,
+        h('p', { class: 'parents-tip' },
+          'A Sociedade Brasileira de Pediatria recomenda evitar telas antes dos 2 anos. ',
+          'Se usar, prefira poucos minutos, com você junto, conversando e cantando com o bebê. ',
+          'Para sair de um jogo ou vídeo, segure o botão ✕ do canto por 2 segundos.'))),
   );
-  return () => {};
+  return () => themePicker.destroy();
 }

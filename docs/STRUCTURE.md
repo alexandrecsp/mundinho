@@ -26,7 +26,8 @@ src/
 │   └── home-page.js
 ├── shared/                    ← shared kernel
 │   ├── audio/synth.js         ← soft Web Audio synth, one channel per activity
-│   ├── stage/create-stage.js  ← canvas, unified input and frame loop handed to plugins
+│   ├── stage/create-stage.js  ← canvas, unified input, frame loop and theme colours handed to plugins
+│   ├── theme/mix-palette.js   ← blends a { light, dark } palette across a theme change
 │   └── ui/dom.js              ← h() element builder
 └── modules/
     ├── catalog/               ← which activities exist and how to open one
@@ -39,6 +40,11 @@ src/
     │   ├── domain/{entities,ports}/
     │   ├── application/{use-cases,services,dtos}/
     │   └── infrastructure/{driven,driven/dtos,driving,config}/
+    ├── theme/                 ← light or dark, chosen or by time of day
+    │   ├── index.js
+    │   ├── domain/{value-objects,ports}/
+    │   ├── application/{use-cases,dtos}/
+    │   └── infrastructure/{driven,driving,config}/
     └── player/                ← plays one activity full screen (display only)
         ├── index.js
         └── infrastructure/driving/
@@ -54,6 +60,7 @@ content/                       ← activity plugins and the catalog that lists t
 | Folder | Spelling | Example |
 |---|---|---|
 | `domain/entities` | `<noun>.js` | `daily-screen-time.js` |
+| `domain/value-objects` | `<noun>.js` | `theme-preference.js` |
 | `domain/ports` | `<noun>.port.js` | `screen-time-repository.port.js` |
 | `domain/errors` | `<noun>.error.js` | `activity-not-found.error.js` |
 | `application/use-cases` | `<verb-noun>.use-case.js` | `record-screen-time.use-case.js` |
@@ -72,4 +79,6 @@ content/                       ← activity plugins and the catalog that lists t
 - **The catalog has one driven adapter.** `StaticCatalogAdapter` already reads an in-memory list, so the use-case tests run on it with their own entries.
 - **Driving adapters are plain functions** (`render…`, `mount…`) that return elements or a cleanup function. There is no UI framework, so there are no components or hooks.
 - **`content/` sits outside `src/`.** Games and videos are plugins that a non-programmer edits often. They depend only on the `stage` object they receive, never on imports from `src/`. The catalog lives beside them so that adding one is a change in one folder.
-- **`app/home-page.js` composes two modules** (the catalog grid and the screen-time panel), so it belongs to the shell and not to either module.
+- **`app/home-page.js` composes three modules** (the catalog grid, the screen-time panel and the theme picker), so it belongs to the shell and not to any one of them.
+- **The theme module's config wires a driving adapter.** `theme-controller.js` must exist once per app, because it owns `<html data-theme>` and the clock re-check, so `createThemeModule` builds it alongside the use cases.
+- **Each module keeps its own clock port.** Screen time needs the day and the theme needs the hour. Sharing one port would couple two modules that change for different reasons.

@@ -11,6 +11,17 @@ const MELODY = [
 ];
 const BASS = [['G2', 4], ['C3', 4], ['E3', 4], ['D3', 4], ['G2', 4], ['C3', 4], ['D3', 4], ['G2', 4]];
 const BPM = 84;
+
+const PALETTE = {
+  light: {
+    top: '#5ccfff', bottom: '#0a5a9c', rays: 0.06, bubble: 0.7,
+    sand: '#f2d38a', seaweed: '#2e9e5b', starfish: '#ff7b54', jelly: 0.85, tentacles: 0.7,
+  },
+  dark: {
+    top: '#0b3557', bottom: '#020d1c', rays: 0.025, bubble: 0.4,
+    sand: '#5e5034', seaweed: '#1c5638', starfish: '#a3523a', jelly: 0.7, tentacles: 0.5,
+  },
+};
 const FISH_COLORS = [
   ['#ff8c42', '#ffb37a'],
   ['#ffd23f', '#ffe68a'],
@@ -58,14 +69,15 @@ export default {
     stage.onFrame((dt, t) => {
       const w = stage.width;
       const h = stage.height;
+      const c = stage.colors(PALETTE);
 
       const water = ctx.createLinearGradient(0, 0, 0, h);
-      water.addColorStop(0, '#5ccfff');
-      water.addColorStop(1, '#0a5a9c');
+      water.addColorStop(0, c.top);
+      water.addColorStop(1, c.bottom);
       ctx.fillStyle = water;
       ctx.fillRect(0, 0, w, h);
 
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+      ctx.fillStyle = `rgba(255, 255, 255, ${c.rays})`;
       for (let i = 0; i < 4; i++) {
         const sway = Math.sin(t * 0.3 + i) * w * 0.05;
         const x = w * (0.15 + i * 0.25) + sway;
@@ -88,7 +100,7 @@ export default {
         }
         ctx.beginPath();
         ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.strokeStyle = `rgba(255, 255, 255, ${c.bubble})`;
         ctx.lineWidth = 1.5;
         ctx.stroke();
       }
@@ -96,7 +108,7 @@ export default {
       for (const jelly of jellies) {
         jelly.y -= 0.012 * dt;
         if (jelly.y < -0.15) jelly.y = 1.1;
-        drawJelly(ctx, jelly.x * w + Math.sin(t * 0.4 + jelly.phase) * 20, jelly.y * h, Math.min(w, h) * 0.06, t + jelly.phase);
+        drawJelly(ctx, jelly.x * w + Math.sin(t * 0.4 + jelly.phase) * 20, jelly.y * h, Math.min(w, h) * 0.06, t + jelly.phase, c);
       }
 
       for (const f of fish) {
@@ -108,9 +120,9 @@ export default {
       }
 
       const sandTop = h * 0.88;
-      for (let i = 0; i < 9; i++) drawSeaweed(ctx, w * (i + 0.5) / 9, sandTop + 6, h * (0.18 + (i % 3) * 0.06), t + i);
+      for (let i = 0; i < 9; i++) drawSeaweed(ctx, w * (i + 0.5) / 9, sandTop + 6, h * (0.18 + (i % 3) * 0.06), t + i, c.seaweed);
 
-      ctx.fillStyle = '#f2d38a';
+      ctx.fillStyle = c.sand;
       ctx.beginPath();
       ctx.moveTo(0, h);
       ctx.lineTo(0, sandTop);
@@ -118,7 +130,7 @@ export default {
       ctx.lineTo(w, sandTop + Math.sin(w * 0.01) * 6);
       ctx.lineTo(w, h);
       ctx.fill();
-      drawStarfish(ctx, w * 0.72, sandTop + (h - sandTop) * 0.5, Math.min(w, h) * 0.03);
+      drawStarfish(ctx, w * 0.72, sandTop + (h - sandTop) * 0.5, Math.min(w, h) * 0.03, c.starfish);
     });
   },
 };
@@ -164,11 +176,11 @@ function drawFish(ctx, x, y, { dir, size, color, fin, phase }, t) {
   ctx.restore();
 }
 
-function drawJelly(ctx, x, y, size, t) {
+function drawJelly(ctx, x, y, size, t, c) {
   const pulse = 1 + Math.sin(t * 2) * 0.1;
   ctx.save();
   ctx.translate(x, y);
-  ctx.strokeStyle = 'rgba(255, 190, 230, 0.7)';
+  ctx.strokeStyle = `rgba(255, 190, 230, ${c.tentacles})`;
   ctx.lineWidth = 3;
   ctx.lineCap = 'round';
   for (let i = -2; i <= 2; i++) {
@@ -178,7 +190,7 @@ function drawJelly(ctx, x, y, size, t) {
     ctx.stroke();
   }
   ctx.scale(pulse, 2 - pulse);
-  ctx.fillStyle = 'rgba(255, 170, 220, 0.85)';
+  ctx.fillStyle = `rgba(255, 170, 220, ${c.jelly})`;
   ctx.beginPath();
   ctx.ellipse(0, 0, size, size * 0.8, 0, Math.PI, 0);
   ctx.closePath();
@@ -192,8 +204,8 @@ function drawJelly(ctx, x, y, size, t) {
   ctx.restore();
 }
 
-function drawSeaweed(ctx, x, base, height, t) {
-  ctx.strokeStyle = '#2e9e5b';
+function drawSeaweed(ctx, x, base, height, t, color) {
+  ctx.strokeStyle = color;
   ctx.lineWidth = 10;
   ctx.lineCap = 'round';
   ctx.beginPath();
@@ -203,8 +215,8 @@ function drawSeaweed(ctx, x, base, height, t) {
   ctx.stroke();
 }
 
-function drawStarfish(ctx, x, y, size) {
-  ctx.fillStyle = '#ff7b54';
+function drawStarfish(ctx, x, y, size, color) {
+  ctx.fillStyle = color;
   ctx.beginPath();
   for (let i = 0; i < 10; i++) {
     const radius = i % 2 ? size * 0.45 : size;

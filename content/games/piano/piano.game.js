@@ -4,8 +4,26 @@
  * carinha de cada faixa pula quando sua nota toca.
  */
 const NOTES = ['C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5'];
-const COLORS = ['#ff595e', '#ff924c', '#ffca3a', '#8ac926', '#2ec4b6', '#1982c4', '#4267ac', '#6a4c93'];
 const NARROW_BANDS = 5;
+
+const PALETTE = {
+  light: {
+    ground: '#fff8ef',
+    bands: ['#ff595e', '#ff924c', '#ffca3a', '#8ac926', '#2ec4b6', '#1982c4', '#4267ac', '#6a4c93'],
+    glow: 0.45,
+    face: '#ffffff',
+    feature: '#2b2540',
+    note: '#ffffff',
+  },
+  dark: {
+    ground: '#120f1c',
+    bands: ['#9e3a3d', '#a3602f', '#a68a2a', '#5a8420', '#22867e', '#195f8c', '#34508a', '#523a78'],
+    glow: 0.3,
+    face: '#e6e1f0',
+    feature: '#1d1830',
+    note: '#e6e1f0',
+  },
+};
 
 export default {
   mount(stage) {
@@ -46,7 +64,8 @@ export default {
       const count = bandCount();
       const width = bandWidth();
       const h = stage.height;
-      ctx.fillStyle = '#fff8ef';
+      const c = stage.colors(PALETTE);
+      ctx.fillStyle = c.ground;
       ctx.fillRect(0, 0, stage.width, h);
 
       for (let i = 0; i < count; i++) {
@@ -55,21 +74,22 @@ export default {
 
         ctx.beginPath();
         ctx.roundRect(x + 6, 6, width - 12, h - 12, 28);
-        ctx.fillStyle = COLORS[i];
+        ctx.fillStyle = c.bands[i];
         ctx.fill();
         if (glow[i] > 0) {
-          ctx.fillStyle = `rgba(255, 255, 255, ${glow[i] * 0.45})`;
+          ctx.fillStyle = `rgba(255, 255, 255, ${glow[i] * c.glow})`;
           ctx.fill();
         }
 
         const r = Math.min(width * 0.32, h * 0.1);
         const hop = Math.sin(glow[i] * Math.PI) * h * 0.12;
         const bob = Math.sin(t * 2 + i) * 3;
-        drawFace(ctx, x + width / 2, h - r * 1.8 - hop + bob, r);
+        drawFace(ctx, x + width / 2, h - r * 1.8 - hop + bob, r, c);
       }
 
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+      ctx.fillStyle = c.note;
       for (let i = floating.length - 1; i >= 0; i--) {
         const note = floating[i];
         note.life -= dt * 0.6;
@@ -79,19 +99,20 @@ export default {
           continue;
         }
         ctx.font = `${Math.round(40 + (1 - note.life) * 20)}px sans-serif`;
-        ctx.fillStyle = `rgba(255, 255, 255, ${note.life})`;
+        ctx.globalAlpha = note.life;
         ctx.fillText('♪', note.x, note.y);
       }
+      ctx.globalAlpha = 1;
     });
   },
 };
 
-function drawFace(ctx, x, y, r) {
+function drawFace(ctx, x, y, r, c) {
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = c.face;
   ctx.fill();
-  ctx.fillStyle = '#2b2540';
+  ctx.fillStyle = c.feature;
   for (const side of [-1, 1]) {
     ctx.beginPath();
     ctx.arc(x + side * r * 0.35, y - r * 0.15, r * 0.12, 0, Math.PI * 2);
@@ -101,7 +122,7 @@ function drawFace(ctx, x, y, r) {
   ctx.arc(x, y + r * 0.05, r * 0.4, 0.2 * Math.PI, 0.8 * Math.PI);
   ctx.lineWidth = r * 0.1;
   ctx.lineCap = 'round';
-  ctx.strokeStyle = '#2b2540';
+  ctx.strokeStyle = c.feature;
   ctx.stroke();
 }
 

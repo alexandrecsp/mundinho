@@ -3,17 +3,39 @@
  * nos primeiros meses. Cada toque troca a figura com um sininho; sozinha,
  * ela muda a cada 10 segundos. As trocas são sempre suaves: toques durante
  * a transição são ignorados, para nunca piscar.
+ *
+ * De dia, algumas figuras ficam sobre branco e outras sobre preto. À noite,
+ * todas ficam sobre preto, para a tela não clarear o quarto.
  */
-const RED = '#e63946';
-const INK = '#111111';
 const NOTES = ['C5', 'E5', 'G5', 'C6', 'G5', 'E5'];
 const AUTO_CHANGE_SECONDS = 10;
 const FADE_SECONDS = 0.8;
 
+// `paper` figures sit on white by day; `ink` figures sit on black.
+const PALETTE = {
+  light: {
+    paper: { ground: '#ffffff', mark: '#111111' },
+    ink: { ground: '#111111', mark: '#ffffff' },
+    red: '#e63946',
+  },
+  dark: {
+    paper: { ground: '#0b0b0b', mark: '#e6e6e6' },
+    ink: { ground: '#0b0b0b', mark: '#e6e6e6' },
+    red: '#cf3440',
+  },
+};
+
+const PATTERNS = [
+  { draw: bullseye, sits: 'paper' },
+  { draw: face, sits: 'ink' },
+  { draw: checker, sits: 'paper' },
+  { draw: star, sits: 'ink' },
+  { draw: pinwheel, sits: 'paper' },
+];
+
 export default {
   mount(stage) {
     const { ctx } = stage;
-    const patterns = [bullseye, face, checker, star, pinwheel];
     let current = 0;
     let previous = null;
     let fade = 1;
@@ -22,7 +44,7 @@ export default {
 
     function next() {
       previous = current;
-      current = (current + 1) % patterns.length;
+      current = (current + 1) % PATTERNS.length;
       fade = 0;
       shownFor = 0;
       stage.audio.chime(NOTES[noteIndex++ % NOTES.length]);
@@ -37,50 +59,60 @@ export default {
       fade = Math.min(1, fade + dt / FADE_SECONDS);
       if (shownFor > AUTO_CHANGE_SECONDS) next();
 
-      const view = { ctx, w: stage.width, h: stage.height, size: Math.min(stage.width, stage.height) * 0.8, t };
+      const c = stage.colors(PALETTE);
+      const view = (pattern) => ({
+        ctx,
+        w: stage.width,
+        h: stage.height,
+        size: Math.min(stage.width, stage.height) * 0.8,
+        t,
+        ...c[pattern.sits],
+        red: c.red,
+      });
+
       if (previous !== null && fade < 1) {
         ctx.globalAlpha = 1;
-        patterns[previous](view);
+        PATTERNS[previous].draw(view(PATTERNS[previous]));
       }
       ctx.globalAlpha = previous === null ? 1 : fade;
-      patterns[current](view);
+      PATTERNS[current].draw(view(PATTERNS[current]));
       ctx.globalAlpha = 1;
     });
   },
 };
 
-function bullseye({ ctx, w, h, size, t }) {
-  fill(ctx, w, h, '#fff');
+function bullseye({ ctx, w, h, size, t, ground, mark, red }) {
+  fill(ctx, w, h, ground);
   const rings = 7;
   const breath = 1 + Math.sin(t * 1.2) * 0.04;
-  for (let i = rings; i > 0; i--) circle(ctx, w / 2, h / 2, (size / 2) * (i / rings) * breath, i % 2 ? INK : '#fff');
-  circle(ctx, w / 2, h / 2, size * 0.05 * breath, RED);
+  for (let i = rings; i > 0; i--) circle(ctx, w / 2, h / 2, (size / 2) * (i / rings) * breath, i % 2 ? mark : ground);
+  circle(ctx, w / 2, h / 2, size * 0.05 * breath, red);
 }
 
-function face({ ctx, w, h, size, t }) {
-  fill(ctx, w, h, INK);
+function face({ ctx, w, h, size, t, ground, mark, red }) {
+  fill(ctx, w, h, ground);
   const r = size * 0.45;
   const cx = w / 2;
   const cy = h / 2 + Math.sin(t * 1.1) * size * 0.02;
-  circle(ctx, cx, cy, r, '#fff');
+  circle(ctx, cx, cy, r, mark);
   const blink = t % 4 < 0.15 ? 0.1 : 1;
   for (const side of [-1, 1]) {
     ctx.beginPath();
     ctx.ellipse(cx + side * r * 0.36, cy - r * 0.2, r * 0.12, r * 0.12 * blink, 0, 0, Math.PI * 2);
-    ctx.fillStyle = INK;
+    ctx.fillStyle = ground;
     ctx.fill();
-    circle(ctx, cx + side * r * 0.58, cy + r * 0.18, r * 0.09, RED);
+    circle(ctx, cx + side * r * 0.58, cy + r * 0.18, r * 0.09, red);
   }
   ctx.beginPath();
   ctx.arc(cx, cy + r * 0.05, r * 0.42, 0.15 * Math.PI, 0.85 * Math.PI);
   ctx.lineWidth = r * 0.08;
   ctx.lineCap = 'round';
-  ctx.strokeStyle = INK;
+  ctx.strokeStyle = ground;
   ctx.stroke();
 }
 
-function checker({ ctx, w, h, size, t }) {
-  fill(ctx, w, h, '#fff');
+function checker({ ctx, w, h, size, t, ground, mark }) {
+  fill(ctx, w, h, ground);
   const cells = 6;
   const board = size * 0.8;
   const cell = board / cells;
@@ -89,18 +121,18 @@ function checker({ ctx, w, h, size, t }) {
   ctx.rotate(Math.sin(t * 0.3) * 0.25);
   for (let row = 0; row < cells; row++) {
     for (let col = 0; col < cells; col++) {
-      ctx.fillStyle = (row + col) % 2 ? '#fff' : INK;
+      ctx.fillStyle = (row + col) % 2 ? ground : mark;
       ctx.fillRect(-board / 2 + col * cell, -board / 2 + row * cell, cell + 0.5, cell + 0.5);
     }
   }
   ctx.lineWidth = cell * 0.25;
-  ctx.strokeStyle = INK;
+  ctx.strokeStyle = mark;
   ctx.strokeRect(-board / 2, -board / 2, board, board);
   ctx.restore();
 }
 
-function star({ ctx, w, h, size, t }) {
-  fill(ctx, w, h, INK);
+function star({ ctx, w, h, size, t, ground, mark, red }) {
+  fill(ctx, w, h, ground);
   ctx.save();
   ctx.translate(w / 2, h / 2);
   ctx.rotate(t * 0.2);
@@ -113,23 +145,23 @@ function star({ ctx, w, h, size, t }) {
     ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
   }
   ctx.closePath();
-  ctx.fillStyle = RED;
+  ctx.fillStyle = red;
   ctx.fill();
   ctx.lineWidth = size * 0.03;
   ctx.lineJoin = 'round';
-  ctx.strokeStyle = '#fff';
+  ctx.strokeStyle = mark;
   ctx.stroke();
   ctx.restore();
 }
 
-function pinwheel({ ctx, w, h, size, t }) {
-  fill(ctx, w, h, '#fff');
+function pinwheel({ ctx, w, h, size, t, ground, mark, red }) {
+  fill(ctx, w, h, ground);
   const wedges = 12;
   const r = size * 0.5;
   ctx.save();
   ctx.translate(w / 2, h / 2);
   ctx.rotate(t * 0.25);
-  ctx.fillStyle = INK;
+  ctx.fillStyle = mark;
   for (let i = 0; i < wedges; i += 2) {
     ctx.beginPath();
     ctx.moveTo(0, 0);
@@ -138,7 +170,7 @@ function pinwheel({ ctx, w, h, size, t }) {
     ctx.fill();
   }
   ctx.restore();
-  circle(ctx, w / 2, h / 2, r * 0.12, RED);
+  circle(ctx, w / 2, h / 2, r * 0.12, red);
 }
 
 function fill(ctx, w, h, color) {

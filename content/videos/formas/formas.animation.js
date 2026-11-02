@@ -3,11 +3,23 @@
  * a música toca a sua nota, e também quando o bebê toca perto delas.
  */
 const SHAPES = [
-  { note: 'C5', color: '#ff595e', kind: 'circle' },
-  { note: 'E5', color: '#1982c4', kind: 'square' },
-  { note: 'G5', color: '#ffca3a', kind: 'triangle' },
-  { note: 'A5', color: '#8ac926', kind: 'star' },
+  { note: 'C5', kind: 'circle' },
+  { note: 'E5', kind: 'square' },
+  { note: 'G5', kind: 'triangle' },
+  { note: 'A5', kind: 'star' },
 ];
+
+// `shapes` follows the order of SHAPES.
+const PALETTE = {
+  light: {
+    top: '#ffe9f3', bottom: '#e3f2ff', confettiLight: 75, confettiAlpha: 0.6, floor: '#ffb3d9', floorAlpha: 0.5,
+    shapes: ['#ff595e', '#1982c4', '#ffca3a', '#8ac926'], feature: '#2b2540',
+  },
+  dark: {
+    top: '#1d1530', bottom: '#0f1a2e', confettiLight: 45, confettiAlpha: 0.45, floor: '#5a2d50', floorAlpha: 0.6,
+    shapes: ['#c9474b', '#1f6fa3', '#cfa431', '#6fa422'], feature: '#1a1528',
+  },
+};
 const MELODY = [
   ['C5', 1], ['E5', 1], ['G5', 1], ['E5', 1],
   ['A5', 2], ['G5', 2],
@@ -68,10 +80,11 @@ export default {
       const floor = h * 0.72;
       const gravity = (2 * s * 1.2) / JUMP_SECONDS ** 2;
       beat = Math.max(0, beat - dt * 4);
+      const c = stage.colors(PALETTE);
 
       const sky = ctx.createLinearGradient(0, 0, 0, h);
-      sky.addColorStop(0, '#ffe9f3');
-      sky.addColorStop(1, '#e3f2ff');
+      sky.addColorStop(0, c.top);
+      sky.addColorStop(1, c.bottom);
       ctx.fillStyle = sky;
       ctx.fillRect(0, 0, w, h);
 
@@ -80,14 +93,16 @@ export default {
         if (piece.y > 1.05) piece.y = -0.05;
         ctx.beginPath();
         ctx.arc(piece.x * w + Math.sin(t + piece.hue) * 10, piece.y * h, piece.r * (1 + beat * 0.15), 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${piece.hue}, 80%, 75%, 0.6)`;
+        ctx.fillStyle = `hsla(${piece.hue}, 80%, ${c.confettiLight}%, ${c.confettiAlpha})`;
         ctx.fill();
       }
 
       ctx.beginPath();
       ctx.roundRect(w * 0.08, floor + s * 0.55, w * 0.84, s * 0.35, s * 0.18);
-      ctx.fillStyle = `rgba(255, 179, 217, ${0.5 + beat * 0.3})`;
+      ctx.fillStyle = c.floor;
+      ctx.globalAlpha = Math.min(1, c.floorAlpha + beat * 0.3);
       ctx.fill();
+      ctx.globalAlpha = 1;
 
       bodies.forEach((body, index) => {
         if (body.velocity !== 0 || body.lift < 0) {
@@ -100,13 +115,13 @@ export default {
           }
         }
         body.squash = Math.max(0, body.squash - dt * 5);
-        drawBody(ctx, xOf(index), floor + body.lift, s, body);
+        drawBody(ctx, xOf(index), floor + body.lift, s, body, c.shapes[index], c.feature);
       });
     });
   },
 };
 
-function drawBody(ctx, x, y, size, { kind, color, squash }) {
+function drawBody(ctx, x, y, size, { kind, squash }, color, feature) {
   const half = size / 2;
   ctx.save();
   ctx.translate(x, y + half);
@@ -133,7 +148,7 @@ function drawBody(ctx, x, y, size, { kind, color, squash }) {
   ctx.fill();
 
   const faceY = kind === 'triangle' ? half * 0.25 : 0;
-  ctx.fillStyle = '#2b2540';
+  ctx.fillStyle = feature;
   for (const side of [-1, 1]) {
     ctx.beginPath();
     ctx.arc(side * size * 0.15, faceY - size * 0.06, size * 0.06, 0, Math.PI * 2);
@@ -143,7 +158,7 @@ function drawBody(ctx, x, y, size, { kind, color, squash }) {
   ctx.arc(0, faceY + size * 0.02, size * 0.13, 0.15 * Math.PI, 0.85 * Math.PI);
   ctx.lineWidth = size * 0.04;
   ctx.lineCap = 'round';
-  ctx.strokeStyle = '#2b2540';
+  ctx.strokeStyle = feature;
   ctx.stroke();
   ctx.restore();
 }

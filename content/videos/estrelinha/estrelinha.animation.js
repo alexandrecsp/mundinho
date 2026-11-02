@@ -16,6 +16,20 @@ const BASS = [...BASS_A, ...BASS_B, ...BASS_C, ...BASS_C, ...BASS_A, ...BASS_B].
 const BPM = 72;
 const TAP_NOTES = ['C6', 'D6', 'E6', 'G6', 'A6'];
 
+// By day a pastel dusk with the moon already up; by night the deep sky.
+const PALETTE = {
+  light: {
+    skyTop: '#a9c1ff', skyBottom: '#ffd8e6', star: '#ffffff', starAlpha: 0.6, sparkle: '#ffffff',
+    moonGlow: 0.25, cloud: '#ffffff', cloudAlpha: 0.5,
+    hillBack: '#9cc3a6', hillFront: '#78ad8c', house: '#c97b5a', window: '#fff2b3',
+  },
+  dark: {
+    skyTop: '#0d1b4c', skyBottom: '#2d3383', star: '#fffadc', starAlpha: 1, sparkle: '#fff5c8',
+    moonGlow: 0.35, cloud: '#c8d2ff', cloudAlpha: 0.13,
+    hillBack: '#1b2160', hillFront: '#141842', house: '#141846', window: '#ffd97a',
+  },
+};
+
 export default {
   mount(stage) {
     const { ctx } = stage;
@@ -52,21 +66,24 @@ export default {
     stage.onFrame((dt, t) => {
       const w = stage.width;
       const h = stage.height;
+      const c = stage.colors(PALETTE);
 
       const sky = ctx.createLinearGradient(0, 0, 0, h);
-      sky.addColorStop(0, '#0d1b4c');
-      sky.addColorStop(1, '#2d3383');
+      sky.addColorStop(0, c.skyTop);
+      sky.addColorStop(1, c.skyBottom);
       ctx.fillStyle = sky;
       ctx.fillRect(0, 0, w, h);
 
       for (const star of stars) {
-        const alpha = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * star.speed + star.phase));
-        if (star.r > 1.8) drawSparkle(ctx, star.x * w, star.y * h, star.r * 3, alpha);
+        const alpha = (0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * star.speed + star.phase))) * c.starAlpha;
+        if (star.r > 1.8) drawSparkle(ctx, star.x * w, star.y * h, star.r * 3, alpha, c.star);
         else {
+          ctx.globalAlpha = alpha;
           ctx.beginPath();
           ctx.arc(star.x * w, star.y * h, star.r, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255, 250, 220, ${alpha})`;
+          ctx.fillStyle = c.star;
           ctx.fill();
+          ctx.globalAlpha = 1;
         }
       }
 
@@ -82,12 +99,12 @@ export default {
         else drawShootingStar(ctx, shootingStar, progress, Math.min(w, h));
       }
 
-      drawMoon(ctx, w * 0.75, h * 0.25 + Math.sin(t * 0.5) * 6, Math.min(w, h) * 0.11, t);
+      drawMoon(ctx, w * 0.75, h * 0.25 + Math.sin(t * 0.5) * 6, Math.min(w, h) * 0.11, t, c);
 
       for (const cloud of clouds) {
         cloud.x += cloud.speed * dt;
         if (cloud.x > 1.25) cloud.x = -0.25;
-        drawCloud(ctx, cloud.x * w, cloud.y * h, Math.min(w, h) * 0.08 * cloud.scale);
+        drawCloud(ctx, cloud.x * w, cloud.y * h, Math.min(w, h) * 0.08 * cloud.scale, c);
       }
 
       for (let i = sparkles.length - 1; i >= 0; i--) {
@@ -97,18 +114,19 @@ export default {
           sparkles.splice(i, 1);
           continue;
         }
-        drawSparkle(ctx, s.x, s.y, 6 + (1 - s.life) * 18, Math.sin(s.life * Math.PI));
+        drawSparkle(ctx, s.x, s.y, 6 + (1 - s.life) * 18, Math.sin(s.life * Math.PI), c.sparkle);
       }
 
-      drawHills(ctx, w, h);
+      drawHills(ctx, w, h, c);
     });
   },
 };
 
-function drawSparkle(ctx, x, y, size, alpha) {
+function drawSparkle(ctx, x, y, size, alpha, color) {
   ctx.save();
   ctx.translate(x, y);
-  ctx.fillStyle = `rgba(255, 245, 200, ${alpha})`;
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
   ctx.beginPath();
   for (let i = 0; i < 8; i++) {
     const radius = i % 2 ? size * 0.18 : size;
@@ -136,9 +154,9 @@ function drawShootingStar(ctx, { x, y }, progress, scale) {
   ctx.stroke();
 }
 
-function drawMoon(ctx, x, y, r, t) {
+function drawMoon(ctx, x, y, r, t, c) {
   const glow = ctx.createRadialGradient(x, y, r * 0.8, x, y, r * 2.6);
-  glow.addColorStop(0, 'rgba(255, 244, 194, 0.35)');
+  glow.addColorStop(0, `rgba(255, 244, 194, ${c.moonGlow})`);
   glow.addColorStop(1, 'rgba(255, 244, 194, 0)');
   ctx.fillStyle = glow;
   ctx.fillRect(x - r * 3, y - r * 3, r * 6, r * 6);
@@ -168,17 +186,19 @@ function drawMoon(ctx, x, y, r, t) {
   }
 }
 
-function drawCloud(ctx, x, y, size) {
-  ctx.fillStyle = 'rgba(200, 210, 255, 0.13)';
+function drawCloud(ctx, x, y, size, c) {
+  ctx.fillStyle = c.cloud;
+  ctx.globalAlpha = c.cloudAlpha;
   for (const [dx, dy, r] of [[0, 0, 1], [0.9, 0.15, 0.75], [-0.9, 0.2, 0.7], [0.3, -0.45, 0.7]]) {
     ctx.beginPath();
     ctx.arc(x + dx * size, y + dy * size, r * size, 0, Math.PI * 2);
     ctx.fill();
   }
+  ctx.globalAlpha = 1;
 }
 
-function drawHills(ctx, w, h) {
-  ctx.fillStyle = '#1b2160';
+function drawHills(ctx, w, h, c) {
+  ctx.fillStyle = c.hillBack;
   ctx.beginPath();
   ctx.moveTo(0, h);
   ctx.lineTo(0, h * 0.82);
@@ -190,17 +210,17 @@ function drawHills(ctx, w, h) {
   const house = Math.min(w, h) * 0.06;
   const hx = w * 0.3;
   const hy = h * 0.76 - house * 0.2;
-  ctx.fillStyle = '#141846';
+  ctx.fillStyle = c.house;
   ctx.fillRect(hx - house / 2, hy, house, house * 0.8);
   ctx.beginPath();
   ctx.moveTo(hx - house * 0.65, hy);
   ctx.lineTo(hx, hy - house * 0.55);
   ctx.lineTo(hx + house * 0.65, hy);
   ctx.fill();
-  ctx.fillStyle = '#ffd97a';
+  ctx.fillStyle = c.window;
   ctx.fillRect(hx - house * 0.15, hy + house * 0.2, house * 0.3, house * 0.28);
 
-  ctx.fillStyle = '#141846';
+  ctx.fillStyle = c.hillFront;
   ctx.beginPath();
   ctx.moveTo(0, h);
   ctx.lineTo(0, h * 0.92);

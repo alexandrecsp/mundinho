@@ -6,6 +6,12 @@ const MAX_BUBBLES = 16;
 const BURST_SECONDS = 0.6;
 const BIRTH_NOTES = ['C5', 'E5', 'G5', 'A5'];
 
+// Lightness and alpha of the bubbles, by day and by night.
+const PALETTE = {
+  light: { skyTop: '#e3f4ff', skyBottom: '#fff0f8', core: 96, coreAlpha: 0.5, rim: 72, rimAlpha: 0.45, line: 60, shine: 0.85 },
+  dark: { skyTop: '#0f1433', skyBottom: '#25183d', core: 78, coreAlpha: 0.3, rim: 52, rimAlpha: 0.35, line: 68, shine: 0.5 },
+};
+
 export default {
   mount(stage) {
     const { ctx } = stage;
@@ -81,48 +87,49 @@ export default {
         if (bursts[i].age > BURST_SECONDS) bursts.splice(i, 1);
       }
 
+      const c = stage.colors(PALETTE);
       const sky = ctx.createLinearGradient(0, 0, 0, stage.height);
-      sky.addColorStop(0, '#e3f4ff');
-      sky.addColorStop(1, '#fff0f8');
+      sky.addColorStop(0, c.skyTop);
+      sky.addColorStop(1, c.skyBottom);
       ctx.fillStyle = sky;
       ctx.fillRect(0, 0, stage.width, stage.height);
 
-      for (const bubble of bubbles) drawBubble(ctx, bubble);
-      for (const burst of bursts) drawBurst(ctx, burst);
+      for (const bubble of bubbles) drawBubble(ctx, bubble, c);
+      for (const burst of bursts) drawBurst(ctx, burst, c);
     });
   },
 };
 
-function drawBubble(ctx, { x, y, r, hue, grown }) {
+function drawBubble(ctx, { x, y, r, hue, grown }, c) {
   const radius = r * easeOutBack(grown);
   if (radius <= 0) return;
   const body = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, radius * 0.1, x, y, radius);
-  body.addColorStop(0, `hsla(${hue}, 100%, 96%, 0.5)`);
-  body.addColorStop(1, `hsla(${hue}, 90%, 72%, 0.45)`);
+  body.addColorStop(0, `hsla(${hue}, 100%, ${c.core}%, ${c.coreAlpha})`);
+  body.addColorStop(1, `hsla(${hue}, 90%, ${c.rim}%, ${c.rimAlpha})`);
   ctx.beginPath();
   ctx.arc(x, y, radius, 0, Math.PI * 2);
   ctx.fillStyle = body;
   ctx.fill();
   ctx.lineWidth = 3;
-  ctx.strokeStyle = `hsla(${hue}, 80%, 60%, 0.8)`;
+  ctx.strokeStyle = `hsla(${hue}, 80%, ${c.line}%, 0.8)`;
   ctx.stroke();
 
   ctx.beginPath();
   ctx.ellipse(x - radius * 0.38, y - radius * 0.42, radius * 0.22, radius * 0.12, -0.6, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+  ctx.fillStyle = `rgba(255, 255, 255, ${c.shine})`;
   ctx.fill();
 }
 
-function drawBurst(ctx, { x, y, r, hue, age }) {
+function drawBurst(ctx, { x, y, r, hue, age }, c) {
   const progress = age / BURST_SECONDS;
   const alpha = 1 - progress;
   ctx.beginPath();
   ctx.arc(x, y, r * (1 + progress * 0.8), 0, Math.PI * 2);
   ctx.lineWidth = 4 * alpha;
-  ctx.strokeStyle = `hsla(${hue}, 80%, 60%, ${alpha})`;
+  ctx.strokeStyle = `hsla(${hue}, 80%, ${c.line}%, ${alpha})`;
   ctx.stroke();
 
-  ctx.fillStyle = `hsla(${hue}, 85%, 65%, ${alpha})`;
+  ctx.fillStyle = `hsla(${hue}, 85%, ${c.line + 5}%, ${alpha})`;
   for (let i = 0; i < 8; i++) {
     const angle = (i / 8) * Math.PI * 2;
     const distance = r * (1 + progress * 1.6);

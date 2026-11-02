@@ -17,6 +17,7 @@ Precisa do Node 20.11 ou mais novo. Não dá para abrir o `index.html` direto do
 - **Home**: os pais escolhem um jogo ou vídeo. O app entra em tela cheia e mantém a tela acesa.
 - **Dentro da atividade**: qualquer toque, arrasto ou tecla gera uma resposta. A única saída é **segurar o ✕ do canto por 2 segundos**, então o bebê não sai sem querer.
 - **Tempo de tela**: tem um limite diário (padrão de 10 min) que os pais ajustam na *Área dos pais*. Quando acaba, a atividade dá lugar a uma tela de descanso. O contador zera à meia-noite.
+- **Tema claro e escuro**: escolhido na *Área dos pais*. No *Automático*, fica claro das 7h às 18h e escuro no resto do dia. Vale para a página e para todos os jogos e vídeos; se o tema virar no meio de um jogo, as cores mudam aos poucos, sem clarão.
 - **Som**: é gerado pelo próprio navegador, com volume baixo e um limitador, então nenhum jogo toca alto.
 - **Imagem**: as animações são lentas e as trocas de cena são suaves, sem nada piscando.
 
@@ -25,6 +26,12 @@ Precisa do Node 20.11 ou mais novo. Não dá para abrir o `index.html` direto do
 1. Crie `content/games/<id>/<id>.game.js`:
 
    ```js
+   // As cores de dia e de noite. As duas paletas têm as mesmas chaves.
+   const PALETTE = {
+     light: { ground: '#fff8ef', ball: '#ff595e', glow: 0.5 },
+     dark: { ground: '#120f1c', ball: '#9e3a3d', glow: 0.25 },
+   };
+
    export default {
      mount(stage) {
        const { ctx } = stage;
@@ -35,9 +42,10 @@ Precisa do Node 20.11 ou mais novo. Não dá para abrir o `index.html` direto do
        });
 
        stage.onFrame((dt, t) => {
-         ctx.fillStyle = '#fff';
+         const c = stage.colors(PALETTE); // a paleta do tema atual, já misturada na transição
+         ctx.fillStyle = c.ground;
          ctx.fillRect(0, 0, stage.width, stage.height);
-         // desenhe aqui
+         // desenhe aqui, sempre com as cores de `c`
        });
 
        // opcional: devolva uma função para limpar o que você mesmo criou
@@ -72,12 +80,18 @@ Precisa do Node 20.11 ou mais novo. Não dá para abrir o `index.html` direto do
 | `onDrag(fn({ x, y, id }))` | dedo arrastando |
 | `onResize(fn(w, h))` | a tela mudou de tamanho |
 | `idleSeconds` | segundos desde o último toque |
+| `colors({ light, dark })` | a paleta do quadro atual; mistura cores hexadecimais, números, listas e objetos |
+| `theme`, `darkness` | `'light'` ou `'dark'`, e de 0 (claro) a 1 (escuro) durante a transição |
 | `random(min, max)`, `pick(lista)`, `emojiFont(tamanho)` | atalhos |
 | `audio.tone(nota, opções)` | uma nota: `'C5'`, `'F#4'` ou Hz; opções `duration`, `wave`, `gain`, `delay`, `glideTo` |
 | `audio.chime(nota)`, `audio.pop()` | sininho e estouro de bolha |
 | `audio.play(melodia, opções)` | toca `[[nota, tempos], ...]` em loop; opções `bpm`, `ring`, `onNote` |
 
 O player desliga tudo isso sozinho quando a atividade fecha: quadros, toques e som.
+
+### Cores de noite
+
+À noite, a tela é a única luz do quarto. Na paleta `dark`, prefira fundos quase pretos, cores menos saturadas e brilhos mais fracos. As cores dentro de textos como `hsl(...)` não se misturam sozinhas; coloque na paleta só os números (luminosidade, transparência) e monte o texto com eles, como em [bolhas.game.js](content/games/bolhas/bolhas.game.js).
 
 ## Adicionar um vídeo
 

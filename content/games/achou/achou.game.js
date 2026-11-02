@@ -9,6 +9,12 @@ const SHOW_SECONDS = 2.8;
 const HIDE_SECONDS = 0.7;
 const AUTO_REVEAL_SECONDS = 5;
 
+// Each animal brings its own hue; these set how bright the scene wears it.
+const PALETTE = {
+  light: { sat: 80, light: 88, blanketSat: 70, blanketLight: 62, hemLight: 48, dots: 0.45, text: 35 },
+  dark: { sat: 35, light: 18, blanketSat: 45, blanketLight: 38, hemLight: 28, dots: 0.22, text: 80 },
+};
+
 export default {
   mount(stage) {
     const { ctx } = stage;
@@ -75,8 +81,9 @@ export default {
       const size = Math.min(w, h) * 0.42;
       const cx = w / 2;
       const cy = h * 0.46;
+      const c = stage.colors(PALETTE);
 
-      ctx.fillStyle = `hsl(${hue}, 80%, 88%)`;
+      ctx.fillStyle = `hsl(${hue}, ${c.sat}%, ${c.light}%)`;
       ctx.fillRect(0, 0, w, h);
 
       const scale = 1 + Math.sin(bounce * Math.PI) * 0.18;
@@ -93,17 +100,17 @@ export default {
         ctx.globalAlpha = Math.min(1, phaseTime * 3);
         ctx.font = `600 ${Math.round(size * 0.28)}px Fredoka, sans-serif`;
         ctx.textAlign = 'center';
-        ctx.fillStyle = `hsl(${hue}, 55%, 35%)`;
+        ctx.fillStyle = `hsl(${hue}, 55%, ${c.text}%)`;
         ctx.fillText('Achou!', cx, cy + size * 0.8);
         ctx.globalAlpha = 1;
       }
 
-      if (cover > 0) drawBlanket(ctx, { cx, cy, size, h, hue, cover, t, waiting: phase === 'hidden' });
+      if (cover > 0) drawBlanket(ctx, { cx, cy, size, h, hue, cover, t, waiting: phase === 'hidden', c });
     });
   },
 };
 
-function drawBlanket(ctx, { cx, cy, size, h, hue, cover, t, waiting }) {
+function drawBlanket(ctx, { cx, cy, size, h, hue, cover, t, waiting, c }) {
   const width = size * 1.7;
   const height = size * 1.6;
   const restingTop = cy - height / 2;
@@ -116,11 +123,11 @@ function drawBlanket(ctx, { cx, cy, size, h, hue, cover, t, waiting }) {
 
   ctx.beginPath();
   ctx.roundRect(-width / 2, -height / 2, width, height, size * 0.18);
-  ctx.fillStyle = `hsl(${(hue + 180) % 360}, 70%, 62%)`;
+  ctx.fillStyle = `hsl(${(hue + 180) % 360}, ${c.blanketSat}%, ${c.blanketLight}%)`;
   ctx.fill();
   ctx.save();
   ctx.clip();
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+  ctx.fillStyle = `rgba(255, 255, 255, ${c.dots})`;
   const gap = size * 0.22;
   for (let y = -height / 2; y < height / 2 + gap; y += gap) {
     for (let x = -width / 2; x < width / 2 + gap; x += gap) {
@@ -130,7 +137,7 @@ function drawBlanket(ctx, { cx, cy, size, h, hue, cover, t, waiting }) {
       ctx.fill();
     }
   }
-  ctx.fillStyle = `hsl(${(hue + 180) % 360}, 60%, 48%)`;
+  ctx.fillStyle = `hsl(${(hue + 180) % 360}, 60%, ${c.hemLight}%)`;
   ctx.fillRect(-width / 2, height / 2 - size * 0.14, width, size * 0.14);
   ctx.restore();
   ctx.restore();

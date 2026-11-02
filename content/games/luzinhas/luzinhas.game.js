@@ -1,11 +1,18 @@
 /**
- * Céu escuro onde o dedo deixa um rastro de luzinhas coloridas. Quanto mais
- * alto o toque, mais aguda a nota. Sem ninguém tocando, um cometa desenha
- * sozinho, convidando a brincar.
+ * O dedo deixa um rastro de luzinhas coloridas: num céu claro de dia, num
+ * céu estrelado à noite. Quanto mais alto o toque, mais aguda a nota. Sem
+ * ninguém tocando, um cometa desenha sozinho, convidando a brincar.
  */
 const SCALE = ['C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5', 'C6'];
 const MAX_SPARKS = 700;
 const COMET_AFTER_SECONDS = 4;
+
+// Light sparks add up on a dark sky ('lighter') but would wash out to
+// white on a light one, so by day they are deeper and simply painted over.
+const PALETTE = {
+  light: { ground: '#f4f1ff', dots: '#c9c0ef', dotsAlpha: 0.8, spark: 50, halo: 75, haloAlpha: 0.35, blend: 'source-over' },
+  dark: { ground: '#0b1036', dots: '#ffffff', dotsAlpha: 0.35, spark: 70, halo: 60, haloAlpha: 0.12, blend: 'lighter' },
+};
 
 export default {
   mount(stage) {
@@ -76,24 +83,27 @@ export default {
         if (spark.life <= 0) sparks.splice(i, 1);
       }
 
-      ctx.fillStyle = '#0b1036';
+      const c = stage.colors(PALETTE);
+      ctx.fillStyle = c.ground;
       ctx.fillRect(0, 0, stage.width, stage.height);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+      ctx.fillStyle = c.dots;
+      ctx.globalAlpha = c.dotsAlpha;
       for (const star of backdrop) {
         ctx.beginPath();
         ctx.arc(star.x * stage.width, star.y * stage.height, star.r, 0, Math.PI * 2);
         ctx.fill();
       }
+      ctx.globalAlpha = 1;
 
-      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalCompositeOperation = c.blend;
       for (const spark of sparks) {
         ctx.beginPath();
         ctx.arc(spark.x, spark.y, spark.size * 3, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${spark.hue}, 90%, 60%, ${spark.life * 0.12})`;
+        ctx.fillStyle = `hsla(${spark.hue}, 90%, ${c.halo}%, ${spark.life * c.haloAlpha})`;
         ctx.fill();
         ctx.beginPath();
         ctx.arc(spark.x, spark.y, spark.size * (0.5 + spark.life * 0.5), 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${spark.hue}, 95%, 70%, ${spark.life})`;
+        ctx.fillStyle = `hsla(${spark.hue}, 95%, ${c.spark}%, ${spark.life})`;
         ctx.fill();
       }
       ctx.globalCompositeOperation = 'source-over';

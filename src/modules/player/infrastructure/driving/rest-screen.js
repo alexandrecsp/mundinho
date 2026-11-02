@@ -8,7 +8,9 @@ export function renderRestScreen(synth) {
   audio.play(GOODNIGHT, { bpm: 60, loop: false, wave: 'triangle', gain: 0.2, ring: 1.6 });
 
   const element = h('div', { class: 'rest' },
-    h('div', { class: 'rest-moon', 'aria-hidden': 'true' }, '🌙'),
+    h('div', { class: 'rest-mark', 'aria-hidden': 'true' },
+      h('span', { class: 'only-light' }, '☁️'),
+      h('span', { class: 'only-dark' }, '🌙')),
     h('h1', {}, 'Hora de descansar'),
     h('p', {}, 'Que tal um colinho, uma música cantada ou uma brincadeira longe da tela?'));
 

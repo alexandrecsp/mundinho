@@ -11,7 +11,7 @@ const METER_TICK_MS = 1000;
  * visible, and the activity gives way to a rest screen when today's limit
  * runs out.
  */
-export function mountPlayer(root, { activityId, catalog, screenTime, synth, onExit }) {
+export function mountPlayer(root, { activityId, catalog, screenTime, theme, synth, onExit }) {
   const surface = h('div', { class: 'player-surface' });
   const exit = createHoldToExit({ onExit });
   root.append(h('div', { class: 'player', oncontextmenu: (event) => event.preventDefault() }, surface, exit.element));
@@ -49,7 +49,7 @@ export function mountPlayer(root, { activityId, catalog, screenTime, synth, onEx
   } else if (playable) {
     stopMeter = startMeter(screenTime, rest);
     const myTurn = turn;
-    start(playable, surface, synth)
+    start(playable, surface, synth, () => theme.controller.current.theme)
       .then((stop) => (closed || turn !== myTurn ? stop() : (stopActivity = stop)))
       .catch((error) => {
         console.error(error);
@@ -66,14 +66,14 @@ export function mountPlayer(root, { activityId, catalog, screenTime, synth, onEx
   };
 }
 
-async function start(playable, surface, synth) {
+async function start(playable, surface, synth, theme) {
   if (playable.kind === 'file') return playFile(playable, surface);
   if (playable.kind === 'youtube') return playYoutube(playable, surface);
 
   const { default: plugin } = await playable.load();
   if (typeof plugin?.mount !== 'function') throw new Error(`"${playable.id}" não exporta default { mount(stage) }`);
   const audio = synth.channel();
-  const stage = createStage(surface, { audio });
+  const stage = createStage(surface, { audio, theme });
   const unmount = plugin.mount(stage);
   return () => {
     if (typeof unmount === 'function') unmount();
