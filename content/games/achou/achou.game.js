@@ -2,12 +2,58 @@
  * Esconde-esconde: um bichinho fica atrás da mantinha. Um toque (ou a
  * espera de alguns segundos) puxa a manta, e o bichinho aparece com um
  * "buu!". Depois a manta volta e outro bichinho se esconde.
+ *
+ * Cada toque no bichinho toca a nota seguinte do primeiro verso de uma
+ * cantiga, uma nota por sílaba, para o adulto cantar junto. O verso continua
+ * de onde parou quando o próximo bichinho aparece. Quando o verso acaba, vêm
+ * alguns toques de notas soltas e depois outra cantiga, por sorteio. Versos
+ * curtos se repetem mais e ficam fáceis de reconhecer.
  */
 const ANIMALS = ['🐶', '🐱', '🐰', '🐻', '🐼', '🐸', '🐵', '🦁', '🐮', '🐷', '🐥', '🐨'];
 const REVEAL_SECONDS = 0.5;
 const SHOW_SECONDS = 2.8;
 const HIDE_SECONDS = 0.7;
 const AUTO_REVEAL_SECONDS = 5;
+
+// O primeiro verso de cantigas de domínio público, todas em dó maior para
+// combinar com o acorde da revelação. Para acrescentar uma, escreva as
+// notas separadas por espaço, uma por sílaba, e a letra no comentário.
+const SONGS = [
+  {
+    title: 'Brilha, Brilha Estrelinha',
+    // Brilha, brilha, estrelinha / Quero ver você brilhar
+    notes: 'C5 C5 G5 G5 A5 A5 G5 F5 F5 E5 E5 D5 D5 C5',
+  },
+  {
+    title: 'Seu Lobato Tinha um Sítio',
+    // Seu Lobato tinha um sítio / Ia, ia, ô
+    notes: 'C5 C5 C5 G4 A4 A4 G4 E5 E5 D5 D5 C5',
+  },
+  {
+    title: 'Frei Martinho',
+    // Frei Martinho, Frei Martinho / Dormes tu? Dormes tu?
+    notes: 'C5 D5 E5 C5 C5 D5 E5 C5 E5 F5 G5 E5 F5 G5',
+  },
+  {
+    title: 'Ciranda, Cirandinha',
+    // Ciranda, cirandinha / Vamos todos cirandar
+    notes: 'G4 C5 C5 E5 E5 G5 G5 F5 E5 D5 G5 E5 D5 C5',
+  },
+  {
+    title: 'Marcha Soldado',
+    // Marcha, soldado / Cabeça de papel
+    notes: 'G5 G5 E5 C5 C5 E5 G5 G5 G5 E5 D5',
+  },
+  {
+    title: 'O Sapo Não Lava o Pé',
+    // O sapo não lava o pé
+    notes: 'G4 C5 C5 G4 A4 G4 E4',
+  },
+].map((song) => ({ ...song, notes: song.notes.split(' ') }));
+
+// Between two songs, a few taps play loose notes from the reveal chord.
+const FREE_NOTES = ['C5', 'E5', 'G5'];
+const FREE_TAPS_BETWEEN_SONGS = 8;
 
 // Each animal brings its own hue; these set how bright the scene wears it.
 const PALETTE = {
@@ -24,6 +70,9 @@ export default {
     let phaseTime = 0;
     let cover = 1; // 1: the blanket is fully over the animal
     let bounce = 0;
+    let song = stage.pick(SONGS);
+    let noteIndex = 0;
+    let freeTapsLeft = 0;
 
     function enter(next) {
       phase = next;
@@ -42,13 +91,30 @@ export default {
       hue = (hue + 70) % 360;
     }
 
+    // The song carries on across animals; at its end come a few loose
+    // notes, then a new song drawn at random.
+    function nextNote() {
+      if (freeTapsLeft > 0) {
+        freeTapsLeft -= 1;
+        return stage.pick(FREE_NOTES);
+      }
+      const note = song.notes[noteIndex];
+      noteIndex += 1;
+      if (noteIndex === song.notes.length) {
+        song = stage.pick(SONGS.filter((candidate) => candidate !== song));
+        noteIndex = 0;
+        freeTapsLeft = FREE_TAPS_BETWEEN_SONGS;
+      }
+      return note;
+    }
+
     stage.onPress(() => {
       if (phase === 'hidden') {
         reveal();
       } else if (phase === 'shown') {
         bounce = 1;
         phaseTime = Math.min(phaseTime, SHOW_SECONDS - 1.5);
-        stage.audio.tone(stage.pick(['C5', 'E5', 'G5']), { wave: 'triangle', duration: 0.5, gain: 0.3 });
+        stage.audio.tone(nextNote(), { wave: 'triangle', duration: 0.5, gain: 0.3 });
       }
     });
 
