@@ -18,10 +18,11 @@ const THEME_FADE_SECONDS = 1.5;
  * instead of flashing.
  *
  * @param {HTMLElement} container
- * @param {{ audio: object, theme?: () => 'light' | 'dark' }} options
- *   the activity's synth channel, and a reading of the current theme
+ * @param {{ audio: object, theme?: () => 'light' | 'dark', colorWords?: boolean }} options
+ *   the activity's synth channel, a reading of the current theme, and
+ *   whether the parents want colour names written on screen
  */
-export function createStage(container, { audio, theme = () => 'light' }) {
+export function createStage(container, { audio, theme = () => 'light', colorWords = true }) {
   const canvas = document.createElement('canvas');
   canvas.className = 'stage-canvas';
   container.append(canvas);
@@ -60,6 +61,8 @@ export function createStage(container, { audio, theme = () => 'light' }) {
     get darkness() {
       return darkness;
     },
+    /** Whether to write colour names, as the parents chose. */
+    colorWords,
     /** The palette for this frame, from { light, dark }; see mixPalette. */
     colors: (palette) => mixPalette(palette.light, palette.dark, darkness),
     random: (min, max) => min + Math.random() * (max - min),
