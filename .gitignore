@@ -1,0 +1,13 @@
+# Configuração local do Claude Code (skills, agentes, ajustes): fica só nesta máquina
+.claude/
+
+# Dependências e logs, caso um dia apareçam
+node_modules/
+npm-debug.log*
+
+# Arquivos do sistema e do editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
