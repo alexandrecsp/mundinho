@@ -19,6 +19,7 @@ Precisa do Node 20.11 ou mais novo. Não dá para abrir o `index.html` direto do
 - **Tempo de tela**: tem um limite diário (padrão de 10 min) que os pais ajustam na *Área dos pais*. Quando acaba, a atividade dá lugar a uma tela de descanso. O contador zera à meia-noite.
 - **Tema claro e escuro**: escolhido na *Área dos pais*. No *Automático*, fica claro das 7h às 18h e escuro no resto do dia. Vale para a página e para todos os jogos e vídeos; se o tema virar no meio de um jogo, as cores mudam aos poucos, sem clarão.
 - **Nome das cores**: na *Área dos pais* dá para mostrar ou esconder o nome da cor escrito dentro das bolhas. Vem ligado.
+- **Bichinhos nas bolhas**: também na *Área dos pais*, as bolhas podem ter contorno de bichinho (urso, gato, coelho, peixinho, pintinho) ou ser redondas. Vem com bichinhos.
 - **Som**: é gerado pelo próprio navegador, com volume baixo e um limitador, então nenhum jogo toca alto.
 - **Imagem**: as animações são lentas e as trocas de cena são suaves, sem nada piscando.
 
@@ -84,6 +85,7 @@ Precisa do Node 20.11 ou mais novo. Não dá para abrir o `index.html` direto do
 | `colors({ light, dark })` | a paleta do quadro atual; mistura cores hexadecimais, números, listas e objetos |
 | `theme`, `darkness` | `'light'` ou `'dark'`, e de 0 (claro) a 1 (escuro) durante a transição |
 | `colorWords` | `true` quando os pais deixam o nome das cores escrito na tela (*Área dos pais*) |
+| `animalShapes` | `true` quando os pais querem as bolhas com formato de bichinho (*Área dos pais*) |
 | `random(min, max)`, `pick(lista)`, `emojiFont(tamanho)` | atalhos |
 | `audio.tone(nota, opções)` | uma nota: `'C5'`, `'F#4'` ou Hz; opções `duration`, `wave`, `gain`, `delay`, `glideTo` |
 | `audio.chime(nota)`, `audio.pop()` | sininho e estouro de bolha |

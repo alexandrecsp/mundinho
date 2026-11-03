@@ -2,6 +2,10 @@
  * Bolhas sobem devagar. Tocar numa bolha estoura; tocar no vazio faz uma
  * bolha nova nascer ali. Uma tecla estoura uma bolha qualquer.
  *
+ * Se os pais deixarem ligado na Área dos pais, cada bolha tem o contorno de
+ * um bichinho (urso, gato, coelho, peixinho, pintinho), como um balão de
+ * festa: mais uma coisa para o adulto nomear. Desligado, são redondas.
+ *
  * Cada bolha tem uma cor com nome e, se os pais deixarem ligado na Área dos
  * pais, traz o nome escrito dentro, em letras de bolha. Ao estourar, as
  * letras se espalham junto com ela. O bebê ainda não lê: a palavra é a
@@ -19,6 +23,27 @@ const COLORS = [
   { word: 'roxo', hue: 275 },
   { word: 'rosa', hue: 330 },
 ];
+
+/*
+ * Each animal is a round body with a few bumps on its rim (ears, tail, tuft,
+ * beak). A bump replaces the slice of the circle from `at - half` to
+ * `at + half` (radians, 0 = right, growing clockwise, top = -PI/2) with a
+ * path drawn in the bump's own frame: `out` away from the centre, `side`
+ * clockwise along the rim, both in body radii. Bumps go in angle order.
+ */
+const ANIMALS = {
+  urso: [lobe(-2.2, 0.32, 0.6, 0.28), lobe(-0.94, 0.32, 0.6, 0.28)],
+  gato: [peaks(-2.15, 0.36, [1.55, -0.12]), peaks(-0.99, 0.36, [1.55, 0.12])],
+  coelho: [lobe(-1.87, 0.18, 1.6, 0.2), lobe(-1.27, 0.18, 1.6, 0.2)],
+  peixinho: [peaks(-1.45, 0.4, [1.35, 0.35]), peaks(0, 0.3, [1.6, -0.6], [1.3, 0], [1.6, 0.6])],
+  pintinho: [
+    lobe(-1.85, 0.1, 0.35, 0.08),
+    lobe(-1.57, 0.1, 0.45, 0.08),
+    lobe(-1.29, 0.1, 0.35, 0.08),
+    peaks(0.15, 0.17, [1.4, 0.05]),
+  ],
+};
+const ANIMAL_KINDS = Object.keys(ANIMALS);
 
 // Lightness and alpha of the bubbles and their words, by day and by night.
 const PALETTE = {
@@ -41,6 +66,8 @@ export default {
         r: stage.random(30, 70),
         hue,
         word,
+        animal: stage.animalShapes ? stage.pick(ANIMAL_KINDS) : null,
+        flip: Math.random() < 0.5, // fish and chicks face either way
         speed: stage.random(25, 55),
         phase: Math.random() * Math.PI * 2,
         grown: 0,
@@ -49,7 +76,8 @@ export default {
 
     function pop(bubble) {
       bubbles.splice(bubbles.indexOf(bubble), 1);
-      bursts.push({ x: bubble.x, y: bubble.y, r: bubble.r, hue: bubble.hue, word: bubble.word, age: 0 });
+      const { x, y, r, hue, word, animal, flip } = bubble;
+      bursts.push({ x, y, r, hue, word, animal, flip, age: 0 });
       stage.audio.pop();
     }
 
@@ -117,17 +145,17 @@ export default {
   },
 };
 
-function drawBubble(ctx, { x, y, r, hue, word, grown }, c, words) {
+function drawBubble(ctx, { x, y, r, hue, word, animal, flip, grown }, c, words) {
   const radius = r * easeOutBack(grown);
   if (radius <= 0) return;
-  const body = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, radius * 0.1, x, y, radius);
+  const body = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, radius * 0.1, x, y, radius * (animal ? 1.4 : 1));
   body.addColorStop(0, `hsla(${hue}, 100%, ${c.core}%, ${c.coreAlpha})`);
   body.addColorStop(1, `hsla(${hue}, 90%, ${c.rim}%, ${c.rimAlpha})`);
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  traceAnimal(ctx, animal, x, y, radius, flip);
   ctx.fillStyle = body;
   ctx.fill();
   ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
   ctx.strokeStyle = `hsla(${hue}, 80%, ${c.line}%, 0.8)`;
   ctx.stroke();
 
@@ -175,12 +203,12 @@ function drawWord(ctx, { word, x, y, size, maxWidth, spread, alpha, hue }, c) {
   ctx.restore();
 }
 
-function drawBurst(ctx, { x, y, r, hue, word, age }, c, words) {
+function drawBurst(ctx, { x, y, r, hue, word, animal, flip, age }, c, words) {
   const progress = age / BURST_SECONDS;
   const alpha = 1 - progress;
-  ctx.beginPath();
-  ctx.arc(x, y, r * (1 + progress * 0.8), 0, Math.PI * 2);
+  traceAnimal(ctx, animal, x, y, r * (1 + progress * 0.8), flip);
   ctx.lineWidth = 4 * alpha;
+  ctx.lineJoin = 'round';
   ctx.strokeStyle = `hsla(${hue}, 80%, ${c.line}%, ${alpha})`;
   ctx.stroke();
 
@@ -196,6 +224,52 @@ function drawBurst(ctx, { x, y, r, hue, word, age }, c, words) {
   if (!words) return;
   const grow = 1 + progress * 0.3;
   drawWord(ctx, { word, x, y, size: r * 0.42 * grow, maxWidth: r * 1.6 * grow, spread: progress * 1.2, alpha, hue }, c);
+}
+
+/**
+ * Builds the animal's outline as the current path, ready to fill or stroke;
+ * a plain circle when there is no animal.
+ */
+function traceAnimal(ctx, animal, x, y, r, flip) {
+  if (!animal) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    return;
+  }
+  const bumps = ANIMALS[animal];
+  const last = bumps[bumps.length - 1];
+  let from = last.at + last.half - Math.PI * 2;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(flip ? -r : r, r);
+  ctx.beginPath();
+  ctx.moveTo(Math.cos(from), Math.sin(from));
+  for (const { at, half, segments } of bumps) {
+    ctx.arc(0, 0, 1, from, at - half);
+    const ux = Math.cos(at);
+    const uy = Math.sin(at);
+    for (const segment of segments) {
+      const points = segment.flatMap(([out, side]) => [ux * out - uy * side, uy * out + ux * side]);
+      if (segment.length === 1) ctx.lineTo(...points);
+      else ctx.bezierCurveTo(...points);
+    }
+    from = at + half;
+  }
+  ctx.closePath();
+  ctx.restore(); // the path keeps its shape; the stroke width does not scale
+}
+
+/** A rounded ear or tuft: `out` sets how far it pokes, `width` how fat. */
+function lobe(at, half, out, width) {
+  const base = Math.cos(half);
+  const edge = Math.sin(half);
+  return { at, half, segments: [[[base + out, -edge - width], [base + out, edge + width], [base, edge]]] };
+}
+
+/** A pointy ear, beak, fin or tail, through the given corners. */
+function peaks(at, half, ...corners) {
+  const end = [Math.cos(half), Math.sin(half)];
+  return { at, half, segments: [...corners, end].map((corner) => [corner]) };
 }
 
 function easeOutBack(p) {

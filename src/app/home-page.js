@@ -1,10 +1,11 @@
+import { renderAnimalShapesToggle } from '../modules/animal-shapes/index.js';
 import { renderCatalogGrid } from '../modules/catalog/index.js';
 import { renderColorWordsToggle } from '../modules/color-words/index.js';
 import { renderScreenTimePanel } from '../modules/screen-time/index.js';
 import { renderThemePicker } from '../modules/theme/index.js';
 import { h } from '../shared/ui/dom.js';
 
-export function mountHome(root, { catalog, screenTime, theme, colorWords, onOpen }) {
+export function mountHome(root, { catalog, screenTime, theme, colorWords, animalShapes, onOpen }) {
   const themePicker = renderThemePicker(theme);
   root.append(
     h('main', { class: 'home' },
@@ -18,6 +19,7 @@ export function mountHome(root, { catalog, screenTime, theme, colorWords, onOpen
         renderScreenTimePanel(screenTime),
         themePicker.element,
         renderColorWordsToggle(colorWords),
+        renderAnimalShapesToggle(animalShapes),
         h('p', { class: 'parents-tip' },
           'A Sociedade Brasileira de Pediatria recomenda evitar telas antes dos 2 anos. ',
           'Se usar, prefira poucos minutos, com você junto, conversando e cantando com o bebê. ',

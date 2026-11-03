@@ -1,5 +1,6 @@
 import { catalog } from '../../content/catalog.js';
 import { createCatalogModule } from '../modules/catalog/index.js';
+import { createAnimalShapesModule } from '../modules/animal-shapes/index.js';
 import { createColorWordsModule } from '../modules/color-words/index.js';
 import { createScreenTimeModule } from '../modules/screen-time/index.js';
 import { createThemeModule } from '../modules/theme/index.js';
@@ -15,6 +16,7 @@ export function compose() {
     screenTime: createScreenTimeModule({ storage, defaultLimitMs: DEFAULT_DAILY_LIMIT_MS }),
     theme: createThemeModule({ storage }),
     colorWords: createColorWordsModule({ storage }),
+    animalShapes: createAnimalShapesModule({ storage }),
     synth: createSynth(),
   };
 }

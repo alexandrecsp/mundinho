@@ -11,7 +11,7 @@ const METER_TICK_MS = 1000;
  * visible, and the activity gives way to a rest screen when today's limit
  * runs out.
  */
-export function mountPlayer(root, { activityId, catalog, screenTime, theme, colorWords, synth, onExit }) {
+export function mountPlayer(root, { activityId, catalog, screenTime, theme, colorWords, animalShapes, synth, onExit }) {
   const surface = h('div', { class: 'player-surface' });
   const exit = createHoldToExit({ onExit });
   root.append(h('div', { class: 'player', oncontextmenu: (event) => event.preventDefault() }, surface, exit.element));
@@ -49,7 +49,8 @@ export function mountPlayer(root, { activityId, catalog, screenTime, theme, colo
   } else if (playable) {
     stopMeter = startMeter(screenTime, rest);
     const myTurn = turn;
-    start(playable, surface, synth, () => theme.controller.current.theme, colorWords.getColorWords.execute().shown)
+    const choices = { colorWords: colorWords.getColorWords.execute().shown, animalShapes: animalShapes.getAnimalShapes.execute().shown };
+    start(playable, surface, synth, () => theme.controller.current.theme, choices)
       .then((stop) => (closed || turn !== myTurn ? stop() : (stopActivity = stop)))
       .catch((error) => {
         console.error(error);
@@ -66,14 +67,14 @@ export function mountPlayer(root, { activityId, catalog, screenTime, theme, colo
   };
 }
 
-async function start(playable, surface, synth, theme, colorWords) {
+async function start(playable, surface, synth, theme, { colorWords, animalShapes }) {
   if (playable.kind === 'file') return playFile(playable, surface);
   if (playable.kind === 'youtube') return playYoutube(playable, surface);
 
   const { default: plugin } = await playable.load();
   if (typeof plugin?.mount !== 'function') throw new Error(`"${playable.id}" não exporta default { mount(stage) }`);
   const audio = synth.channel();
-  const stage = createStage(surface, { audio, theme, colorWords });
+  const stage = createStage(surface, { audio, theme, colorWords, animalShapes });
   const unmount = plugin.mount(stage);
   return () => {
     if (typeof unmount === 'function') unmount();
