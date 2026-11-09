@@ -1,13 +1,12 @@
 /**
- * Esconde-esconde: um bichinho fica atrás da mantinha. Um toque (ou a
- * espera de alguns segundos) puxa a manta, e o bichinho aparece com um
- * "buu!". Depois a manta volta e outro bichinho se esconde.
+ * Esconde-esconde: um bichinho fica atrás da mantinha, que pergunta
+ * "Cadê?". Só um toque puxa a manta, e o bichinho aparece com um
+ * "Achou!". Depois a manta volta e outro bichinho se esconde.
  */
 const ANIMALS = ['🐶', '🐱', '🐰', '🐻', '🐼', '🐸', '🐵', '🦁', '🐮', '🐷', '🐥', '🐨'];
 const REVEAL_SECONDS = 0.5;
 const SHOW_SECONDS = 2.8;
 const HIDE_SECONDS = 0.7;
-const AUTO_REVEAL_SECONDS = 5;
 
 // Each animal brings its own hue; these set how bright the scene wears it.
 const PALETTE = {
@@ -56,7 +55,6 @@ export default {
       phaseTime += dt;
       bounce = Math.max(0, bounce - dt * 2.5);
 
-      if (phase === 'hidden' && phaseTime > AUTO_REVEAL_SECONDS) reveal();
       if (phase === 'revealing') {
         cover = Math.max(0, 1 - phaseTime / REVEAL_SECONDS);
         if (cover === 0) {
@@ -106,6 +104,20 @@ export default {
       }
 
       if (cover > 0) drawBlanket(ctx, { cx, cy, size, h, hue, cover, t, waiting: phase === 'hidden', c });
+
+      if (phase === 'hidden') {
+        const pulse = 1 + Math.sin(t * 3) * 0.06;
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, phaseTime * 3);
+        ctx.translate(cx, cy + size * 1.05);
+        ctx.scale(pulse, pulse);
+        ctx.font = `600 ${Math.round(size * 0.28)}px Fredoka, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = `hsl(${hue}, 55%, ${c.text}%)`;
+        ctx.fillText('Cadê?', 0, 0);
+        ctx.restore();
+      }
     });
   },
 };
