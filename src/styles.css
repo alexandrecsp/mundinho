@@ -485,3 +485,20 @@ button {
     animation: none;
   }
 }
+
+/* Warm light: an amber layer multiplied over everything, games and videos
+   included, keeps red, dims green and cuts most of the blue. */
+.warm-light {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  background: #ffae55;
+  mix-blend-mode: multiply;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+:root[data-warm-light="on"] .warm-light {
+  opacity: 1;
+}
